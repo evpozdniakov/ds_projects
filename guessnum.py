@@ -1,33 +1,34 @@
-"""Optimized algorithm to predict a number.
+"""Simple algorithm to guess a number.
 
 Module exposes functions:
-- predict_number_optimized(number_to_guess: int) -> int
-- user_test_predict_number_optimized()
+- guess_number(number_to_guess: int) -> int
+- guess_number_user_test()
 
-Function user_test_predict_number_optimized runs if the module
-is called directly.
+Function guess_number_user_test runs automatically 
+if you call the module directly.
 """
 
 
-def predict_number_optimized(number_to_guess: int) -> int:
+def guess_number(number_to_guess: int) -> int:
     """Predicts the number with least number of attempts.
 
     The received number_to_guess is an integer from 1 to 100. Function
     makes repetitive attempts to guess the value of number_to_guess,
-    improving itself on each try. To improve itself it uses hints:
-    was the last guess greater or less than the seeking value.
+    improving itself on each try. (To improve itself it uses hints:
+    was the last guess greater or less than the seeking value.) And it
+    counts the attempts.
 
-    It finally returns the number of attempts needed to find the value
-    of number_to_guess.
+    Function works until it finds the number_to_guess.
+    It returns the number of attempts needed.
 
     Args:
         number_to_guess (int): Some integer from 1 to 100.
 
     Raises:
-        AssertionError: If number_to_guess is not integer from 1 to 100
+        AssertionError: If number_to_guess is not an integer from 1 to 100.
 
     Returns:
-        int: Number of attempts to predict the value of number_to_guess
+        int: Number of attempts to guess the value of number_to_guess
     """
     assert(type(number_to_guess) is int)
     assert(1 <= number_to_guess <= 100)
@@ -48,8 +49,8 @@ def predict_number_optimized(number_to_guess: int) -> int:
             return attempts
 
 
-def user_test_predict_number_optimized():
-    """Tests out the function predict_number_optimized."""
+def guess_number_user_test():
+    """Tests out the function guess_number."""
     while True:
         user_input_str = input('\n\nEnter a number from 1 to 100\n\n')
 
@@ -59,11 +60,11 @@ def user_test_predict_number_optimized():
             print("\n\nThe integer entered is outside of allowed range.")
         else:
             user_input_int = int(user_input_str)
-            attempts = predict_number_optimized(user_input_int)
+            attempts = guess_number(user_input_int)
 
             print(f'\n\nI found it in {attempts} attempts\n\n')
             break
 
 
 if __name__ == '__main__':
-    user_test_predict_number_optimized()
+    guess_number_user_test()
