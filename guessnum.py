@@ -4,9 +4,12 @@ Module exposes functions:
 - guess_number(number_to_guess: int) -> int
 - guess_number_user_test()
 
-Function guess_number_user_test runs automatically 
+Function guess_number_user_test runs automatically
 if you call the module directly.
 """
+
+
+import numpy as np
 
 
 def guess_number(number_to_guess: int) -> int:
@@ -64,6 +67,24 @@ def guess_number_user_test():
 
             print(f'\n\nI found it in {attempts} attempts\n\n')
             break
+
+
+def guess_number_mean_test() -> float:
+    """Runs guess_number function 10000 times
+    and returns average number of attempts.
+
+    Returns:
+        float: Average number of attempts needed to guess number.
+    """
+    random_numbers = [np.random.randint(1, 100) for x in range(0, 10000)]
+
+    attempts_list = []
+
+    for n in random_numbers:
+        a = guess_number(n)
+        attempts_list.append(a)
+
+    return np.mean(attempts_list)
 
 
 if __name__ == '__main__':
