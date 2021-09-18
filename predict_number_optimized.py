@@ -4,7 +4,7 @@ Module exposes functions:
 - predict_number_optimized(number_to_guess: int) -> int
 - user_test_predict_number_optimized()
 
-Function user_test_predict_number_optimized runs if the module 
+Function user_test_predict_number_optimized runs if the module
 is called directly.
 """
 
@@ -22,6 +22,9 @@ def predict_number_optimized(number_to_guess: int) -> int:
 
     Args:
         number_to_guess (int): Some integer from 1 to 100.
+
+    Raises:
+        AssertionError: If number_to_guess is not integer from 1 to 100
 
     Returns:
         int: Number of attempts to predict the value of number_to_guess
