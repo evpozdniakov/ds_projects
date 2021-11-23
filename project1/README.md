@@ -1,6 +1,6 @@
 # Закрепление знаний по теме "Работа с данными в Pandas"
 
-*ДЗ по курсу [«Профессия Data Science»](https://lms.skillfactory.ru/courses/course-v1:Skillfactory+DST-PRO+15APR2020/about)\
+*Проект по курсу [«Профессия Data Science»](https://lms.skillfactory.ru/courses/course-v1:Skillfactory+DST-PRO+15APR2020/about)\
 от школы [SkillFactory](https://skillfactory.ru)*
 
 ## Формулировка задания
