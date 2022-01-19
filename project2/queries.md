@@ -217,8 +217,10 @@ select
 from
     hh.candidate cnd
 left join
+    -- присоденияем город
     hh.city c on c.id = cnd.city_id
 where
+    -- условие: занимаемая и желаемая должность должны совпадать
     cnd.desirable_occupation = cnd.current_occupation
 order by 
     c.title, cnd.id
@@ -285,13 +287,18 @@ select
 from
     hh.candidate cnd
 left join
+    -- присоединяем город по ключу
     hh.city c on c.id = cnd.city_id
 inner join
+    -- присоединяем таблицу-связку
     hh.candidate_timetable_type ctt on ctt.candidate_id = cnd.id
 inner join
+    -- присоединяем таблицу вариантов рабочего графика
     hh.timetable_type tt on tt.id = ctt.timetable_id
 where
+    -- задаем первое условие: один из четырех городов
     c.title in ('Новосибирск', 'Омск', 'Томск', 'Тюмень')
+    -- задаем второе условие: рабочий график - вахтовый метод
     and tt.title = 'вахтовый метод'
 order by
     c.title, cnd.id
