@@ -27,11 +27,3 @@
 - Какие ещё интересные исследования можно провести?
 
 Вы можете добавить любые свои рассуждения и умозаключения, к которым пришли в процессе работы. 
-
-## Этапы работы
-
-1. [знакомство с датасетом](https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md#dataset);
-2. [предварительный анализ данных](https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md#first-view);
-3. [глобальный анализ показателей](https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md#global-view).
-4. [анализ кандидатов](https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md#candidates);
-5. [общий вывод](https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md#outcome);
