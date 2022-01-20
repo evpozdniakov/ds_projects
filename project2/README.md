@@ -3,6 +3,10 @@
 *Проект по курсу [«Профессия Data Science»](https://lms.skillfactory.ru/courses/course-v1:Skillfactory+DST-PRO+15APR2020/about)\
 от школы [SkillFactory](https://skillfactory.ru)*
 
+## Ссылка на проект
+
+https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md
+
 ## Цель проекта
 
 Потренироваться в написании SQL-запросов на реальной базе данных соискателей HeadHunter. Выполнить практические задания, проанализировать полученные результаты и сделать выводы.
@@ -27,7 +31,3 @@
 - Какие ещё интересные исследования можно провести?
 
 Вы можете добавить любые свои рассуждения и умозаключения, к которым пришли в процессе работы. 
-
-## Ссылка на проект
-
-https://github.com/evpozdniakov/ds_projects/blob/master/project2/queries.md
