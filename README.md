@@ -13,3 +13,4 @@
 - ДЗ 2: [Закрепление знаний по теме "EDA. Применение статистических тестов на практике"](https://github.com/evpozdniakov/ds_projects/tree/master/hw2)
 - ДЗ 3: [Закрепление знаний по теме "EDA. A/B-тестирование"](https://github.com/evpozdniakov/ds_projects/tree/master/hw3)
 - ДЗ 4: [Знакомтсво с Comet.ml — планирование эксперимента и логирование изменений](https://github.com/evpozdniakov/ds_projects/tree/master/hw4)
+- Проект 3: [EDA + Feature engineering](https://github.com/evpozdniakov/ds_projects/tree/master/project3)
