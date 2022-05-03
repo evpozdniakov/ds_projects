@@ -1,93 +1,82 @@
 #!/Users/ev/opt/anaconda3/bin/python
 
-# import numpy as np
 import pandas as pd
-# from sklearn.model_selection import train_test_split
-# from sklearn.ensemble import RandomForestRegressor
-# from sklearn.feature_selection import chi2
-# from sklearn.feature_selection import f_classif
-# from sklearn import metrics
-# import seaborn as sns
-# import matplotlib.pyplot as plt
-# import category_encoders as ce
-# import json
-# from textblob import TextBlob
-# from scipy import stats
-# from sklearn import preprocessing
-# from geopy import distance
-# import time
-# import googlemaps
 
 # local modules
-import clean
-import features
-
-DEBUG = True
-EXCLUDE_FROM_TRAINING = [
-    # 'additional_number_of_scoring',
-    # 'average_score',
-    # 'city_center_lat',
-    # 'city_center_lng',
-    # 'days_since_review',
-    # 'distance_to_city_center_km',
-    # 'hotel_address',
-    # 'hotel_city',
-    # 'hotel_city_1',
-    # 'hotel_city_2',
-    # 'hotel_city_3',
-    # 'hotel_city_4',
-    # 'hotel_city_5',
-    # 'hotel_city_6',
-    # 'hotel_name',
-    # 'is_center',
-    # 'is_far',
-    # 'is_far_away',
-    # 'is_not_far',
-    # 'is_walking_distance',
-    # 'lat',
-    # 'lng',
-    # 'negative_review',
-    # 'positive_review',
-    # 'review_date',
-    # 'review_total_negative_word_counts',
-    # 'review_total_positive_word_counts',
-    # 'reviewer_nationality',
-    # 'reviewer_score',
-    # 'tags',
-    # 'total_number_of_reviews',
-    # 'total_number_of_reviews_reviewer_has_given',
-]
-INDEX_COLUMN_NAME = None
-RANDOM_STATE = 13
-SOURCE_DIR = '../data/'
-# SOURCE_DIR = '../input/sf-booking/'
-TARGET_COLUMN_NAME = 'reviewer_score'
-TEST_SIZE = 0.25
+import constants
+from helpers import debug_print
+from cleaning import clean_data
+from selecting import select_features
+from transformation import transform_features
+import training
 
 # LOAD DATA
-# =========
+# hotels_test_orig = pd.read_csv(constants.SOURCE_DIR + 'hotels_test.csv.zip', sep=',')
+# hotels_train_orig = pd.read_csv(constants.SOURCE_DIR + 'hotels_train.csv.zip', sep=',')
+# submission_orig = pd.read_csv(constants.SOURCE_DIR + 'submission.csv.zip', sep=',')
 
-# hotels_test_orig = pd.read_csv(SOURCE_DIR + 'hotels_test.csv.zip', sep=',')
-hotels_train_orig = pd.read_csv(SOURCE_DIR + 'hotels_train.csv.zip', sep=',')
-# submission_orig = pd.read_csv(SOURCE_DIR + 'submission.csv.zip', sep=',')
-hotels_train = hotels_train_orig.copy()
+def save_featured_train_set():
+    train_data = pd.read_csv(constants.SOURCE_DIR + 'hotels_train.csv.zip', sep=',')
+    debug_print(f'shape before: {train_data.shape}')
+    training.prepare_data(train_data, is_train_set=True)
+    debug_print(f'shape after: {train_data.shape}')
+    train_data.to_csv('hotels_train_featured.csv', index=False)
+    train_data[0:3000].to_csv('hotels_train_featured_part.csv', index=False)
 
-# hotels_train_orig_part = pd.read_csv('hotels_train_part.csv')
-# print('hotels_train_orig_part.shape')
-# print(hotels_train_orig_part.shape)
-# hotels_train = hotels_train_orig_part[0:1000].copy()
-# hotels_train = hotels_train_orig_part.copy()
+def save_featured_test_set():
+    test_data = pd.read_csv(constants.SOURCE_DIR + 'hotels_test.csv.zip', sep=',')
+    print(f'shape before: {test_data.shape}')
+    training.prepare_data(test_data, is_train_set=False)
+    print(f'shape after: {test_data.shape}')
+    test_data.to_csv('hotels_test_featured.csv', index=False)
 
+def prepare(data):
+    transform_features(data)
+    select_features(data)
 
-# GOAL: add all the features and save the result
+def make_submission_out_of_featured_set():
+    # LOAD FEATURED TRAIN SET
+    X_train = pd.read_csv('hotels_train_featured.csv')
 
-# CLEAN DATA
-clean.add_missing_coords(hotels_train)
+    # PREPARE TRAIN DATA
+    prepare(X_train)
 
-# ADD FEATURES
-# ============
-features.add_all(hotels_train)
+    # TRAIN MODEL
+    y_train = X_train[constants.TARGET_COLUMN_NAME]
+    training.train_model(X_train, y_train)
 
-hotels_train.to_csv('hotels_train_featured.csv', index=False)
+    # LOAD FEATURED TEST SET
+    X_test = pd.read_csv('hotels_test_featured.csv')
 
+    # PREPARE TEST DATA
+    prepare(X_test)
+
+    y_pred = training.predict(X_test)
+    submission = pd.read_csv(constants.SOURCE_DIR + 'submission.csv.zip', sep=',')
+    submission[constants.TARGET_COLUMN_NAME] = y_pred
+    submission.to_csv('hotels_prediction.csv', index = False)
+
+def estimate():
+    # LOAD FEATURED TRAIN SET
+    hotels_featured = pd.read_csv('hotels_train_featured.csv')
+
+    X_train, X_test, y_train, y_test = training.split_to_train_test(hotels_featured)
+
+    # PREPARE TRAIN DATA
+    prepare(X_train)
+
+    # TRAIN MODEL
+    training.train_model(X_train, y_train)
+
+    # PREPARE TEST DATA
+    prepare(X_test)
+
+    # ESTIMATE
+    training.estimate_model(X_test, y_test)
+
+# training.prepare_data(X_test)
+# training.estimate_model(X_test, y_test)
+
+# make_submission_out_of_featured_set()
+# estimate()
 print('\nDONE\n')

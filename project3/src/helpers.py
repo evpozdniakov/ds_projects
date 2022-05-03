@@ -1,10 +1,11 @@
 import category_encoders as ce
-import sys
+import matplotlib.pyplot as plt
 import pandas as pd
 from textblob import TextBlob
 import time
 
-DEBUG = '-d' in sys.argv
+# local modules
+import constants
 
 binary_encoders = None
 def apply_binary(data, features):
@@ -63,10 +64,19 @@ def count_words(text):
     return len([word for word in text.split(' ') if len(word) > 0])
 
 def debug_print(*args, **kwargs):
-    global DEBUG
-
-    if DEBUG:
+    if constants.DEBUG:
         print(*args, **kwargs)
+
+def figax(figsize=(7, 4), rowcol=None, axes=[0,0,1,1], name='Foo'):
+    fig = plt.figure(name, figsize=figsize)
+    
+    if rowcol is None:
+        ax = fig.add_axes(axes)
+    else:
+        rows, cols = rowcol
+        ax = fig.subplots(rows, cols)
+
+    return fig, ax
 
 concap = None
 concap_dict = dict()

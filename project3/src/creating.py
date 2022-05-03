@@ -1,5 +1,3 @@
-#!/Users/ev/opt/anaconda3/bin/python
-
 from geopy import distance
 import json
 import pandas as pd
@@ -14,17 +12,18 @@ from helpers import get_polarity
 from helpers import logger
 
 @logger
-def add_all(data):
+def create_features(data):
     add_city(data)
     add_city_center_lat_lng(data)
     add_distance_to_city_center(data)
-    # add_time_features(data)
-    # add_review_polarity(data)
-    # recount_review_words(data)
-    # parse_days_since_review(data)
-    # parse_tags(data)
-    # apply_onehot(data, ['hotel_city', 'month', 'year'])
-    # apply_binary(data, ['hotel_address', 'reviewer_nationality'])
+    add_time_features(data)
+    add_review_polarity(data)
+    recount_review_words(data)
+    parse_days_since_review(data)
+    parse_tags(data)
+    add_tags_polarity(data)
+    apply_onehot(data, ['hotel_city', 'month', 'year'])
+    apply_binary(data, ['hotel_address', 'reviewer_nationality'])
 
 @logger
 def add_city(data):
@@ -108,12 +107,6 @@ def add_time_features(data):
 
     data.loc[:, ['month', 'year', 'is_new_year', 'is_xmas']] = data.apply(set_month_year, axis=1)
 
-# @logger
-# def replace_all_tags_with_tags_polarity(data):
-#     def calc_polarity(text):
-#         return TextBlob(text).sentiment.polarity
-
-#     data['tags_polarity'] = data['all_tags_joined'].apply(calc_polarity)
-#     # data.drop(columns=['all_tags_joined'], inplace=True)
-#     pass
-
+@logger
+def add_tags_polarity(data):
+    data.loc[:, 'tags_polarity'] = data['all_tags_joined'].apply(get_polarity)
