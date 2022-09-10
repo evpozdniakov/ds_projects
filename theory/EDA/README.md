@@ -317,7 +317,7 @@ scaler = preprocessing.MinMaxScaler().fit(data[columns_to_scale])
 # use the scaler for data (once or many times)
 ndarr = scaler.transform(data[columns_to_scale])
 # create a DataFrame out of ndarr
-norm_df = pd.DataFrame(ndarr, columns=[columns_to_scale]).set_index(data.index)
+norm_df = pd.DataFrame(ndarr, columns=columns_to_scale).set_index(data.index)
 # update the transformed columns data
 data.loc[:, columns_to_scale] = norm_df[columns_to_scale]
 ```
