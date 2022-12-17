@@ -26,7 +26,7 @@
         body { color: #ccc; }
         strong { border-color: #ccc; }
         em { border-color: #ccc; }
-        img { background-color: rgba(255, 255, 255, 0.5) }
+        img { background-color: rgba(255, 255, 255, 0.75) }
         a, a:hover { color: Violet; }
     }
     
@@ -1446,4 +1446,579 @@ fig = px.scatter_3d(
 )
 
 fig.show()
+```
+
+## Dimension reduction
+
+**Понижение размерности** это задача, которая уменьшает кол-во признаков, описывающих объект. Для данных с большим кол-вом признаков она может понадобиться в двух случаях:
+
+- чтобы визуализировать результаты кластеризации
+- чтобы быстрее обучить модель
+
+В процессе выполнения задачи понижения размерности сами *данные будут преобразованы* одним из двух способов:
+
+- линейно
+- нелинейно
+
+### Principal Component Analysis (PCA)
+
+**Метод главных компонент** является базовым способом уменьшения размерности. Принцип его работы изложен в курсе слишком поверхностно. Но я понял, что этот алгоритм *преобразует данные линейно*.
+
+#### Реализация на python
+
+```python
+from sklearn.decomposition import PCA
+
+pca = PCA(
+    n_components=2, # сколько признаков хотим получить
+    random_state=42)
+
+X_pca = pca.fit_transform(X)
+```
+
+### t-SNE
+
+Алгоритм t-SNE (t-distributed Stochastic Neighbor Embedding) преобразует данные нелинейно. Принцип его работы долго объяснять. По сути он пытается разместить элементы на плоскости, сохранив расстояния между ними.
+
+#### Реализация на python
+
+```python
+from sklearn.manifold import TSNE
+
+tsne = TSNE(
+    n_components=2, # сколько признаков хотим получить
+    perplexity=30, # ожидаемая плотность вокруг точки, обычно от 5 до 50.
+    n_iter=500,
+    random_state=42,
+)
+
+X_tsne = tsne.fit_transform(X)
+```
+
+## Валидация данных
+
+### Методы валидации
+
+Различают *двухкомпонентный подход* и *трехкомпонентный подход*
+
+![](./images/dst3-ml5-2_1.png)
+
+Двухкомпонентный подход плох тем, что тестовый набор неявно используется для создания модели. То-есть модель подстраивается под него.
+
+![](./images/dst3-ml5-2_2.png)
+
+Цель трехкомпонентного подхода — полностью изолировать тестовую выборку. 
+
+**Валидация** — это проверка "предсказательности" модели.
+
+### Hold-out
+
+Этим термином называется разбиение всех данных на две (train + test) или на три (train + validation + test) части. Этот метод простой и очень популярный.
+
+![](./images/hold-out.png)
+
+Его недостаток в том, что данные разбиваются на части случайным образом, в результате чего в тестовой выборке могут оказаться не совсем релевантные данные.
+
+#### Реализация на python
+
+```python
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y,
+)
+
+# если нужна третья выборка (validation) то метод запускают еще раз
+```
+
+### K-fold
+
+Данный метод отличается тем, что для кросс-валидации используется тренировочный набор данных. Для этого он разбивается на `k` частей (*folds*) одна часть используется для кросс-валидации, а остальные для обучения. Процесс повторяется `k` раз.
+
+![](./images/k-fold.png)
+
+Преимущество такого подхода в том, что валидация модель будет проведена на всех данных.
+
+#### Реализация на python
+
+```python
+from sklearn import model_selection
+
+kf = model_selection.KFold(
+    n_splits=5,
+    shuffle=True, # default is False
+    random_state=42,
+)
+
+for train_idx, valid_idx in kf.split(X, y):
+    X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+    X_valid, y_valid = X.iloc[valid_idx], y.iloc[valid_idx]
+```
+
+Другой пример с использованием функции `cross_validate`
+
+```python
+from sklearn import model_selection
+
+# model = ...
+
+kf = model_selection.KFold(n_splits=5)
+ 
+cv_metrics = model_selection.cross_validate(
+    estimator=model, # модель
+    X=X,
+    y=y,
+    cv=kf,
+    scoring='accuracy', # желаемая метрика
+    return_train_score=True,
+)
+
+display(cv_metrics)
+```
+
+### Leave-one-out
+
+Это частный случай k-fold с максимальным кол-вом фолдов. Хорошо подходит для небольших датасетов.
+
+![](./images/dst3-ml5-2_10.png)
+
+#### Реализация на python
+
+```python
+from sklearn import model_selection
+
+# model = ...
+
+loo = model_selection.LeaveOneOut()
+ 
+cv_metrics = model_selection.cross_validate(
+    estimator=model, # модель
+    X=X,
+    y=y,
+    cv=loo,
+    scoring='accuracy', # желаемая метрика
+    return_train_score=True,
+)
+
+display(cv_metrics)
+```
+
+## Дисбаланс датасета
+
+В некоторых задачах классификации целевой признак в обучающем датасете может быть распределен неравномерно. Например для задач определения мошенничества в банковских транзакциях большинство данных (более 99%) будут описывать обычные транзакции.
+
+Класс большинства называется **мажоритарным** (majority), а класс меньшинства — **миноритарным** (minority).
+
+В таких случаях нужно:
+
+- следить чтобы целевой признак был распределен одинаково в train и test выборках
+- не использовать модели Decision tree и Logistic regression, потому что они имеют тенденцию игнорировать миноритарный класс
+- не пользоваться метрикой accuracy
+
+### Стратифицированное разбиение
+
+Чтобы целевой признак каждого из классов был распределен в одинаковых пропорциях в train и test выборках нужно в методе `train_test_split` включать флаг `stratify`. А при использовани `K-fold` нужно исползовать его версию [StratifiedKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html)
+
+### Взвешивание объектов
+
+Смысл в том, чтобы придать большее значение миноритарному классу. Вес мажоритарного класса принимается за `1`, а вес миноритарного считается по формуле:
+
+![](./images/weight_of_minority_class.png)
+
+Данные веса будут посчитаны автоматически если создать модель с параметром `class_weight='balanced'`
+
+### Выбор порога вероятности и PR-кривая
+
+Модели возвращают *вероятность* принадлежности элемента к тому или иному классу, то есть число от `0` до `1`. Обычно порогом является число `0.5`, но его можно менять, подгоняя под ответ.
+
+Чтобы найти оптимальный порог строят график изменения метрик *достоверности* (precision) и *полноты* (recall). Такой график называется **PR-кривая**.
+
+![](./images/dst3-ml5-3_17.png)
+
+Такая кривая позволяет:
+
+- определить качество модели по площади (чем больше площадь, тем качественнее модель)
+- из нескольких моделей выбрать лучшую (с наибольшей площадью)
+- выбрать оптимальный порог (с большей достоверностью/полнотой, в зависимости от задачи)
+
+Получить данные для построения PR-кривой можно с помощью функций [cross_val_predict](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html) и [precision_recall_curve](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_curve.html). Найти оптимальное значение метрики и площадь кривой — с помощью [argmax](https://numpy.org/doc/stable/reference/generated/numpy.argmax.html) и [auc](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.auc.html) соответственно.
+
+### Сэмплирование
+
+или **oversampling** — это метод позволяющий искусственно создать дополнительные тренировочные данные для миноритарного класса.
+
+![](./images/dst3-ml5-3_24.png)
+
+#### Реализация на python
+
+```python
+# !conda install -c conda-forge imbalanced-learn
+from imblearn.over_sampling import SMOTE
+
+sm = SMOTE(random_state=42)
+X_train_s, y_train_s = sm.fit_resample(X_train, y_train)
+```
+
+### Заключение
+
+Несбалансированная выборка — это нормальное явление. Но она может стать причиной плохих предсказаний. Нужно помнить о способах борьбы с этими проблемами:
+
+- правильно готовить выборки (использовать стратификацию)
+- использовать сэмплирование
+- использовать сложные модели (ансамбли)
+- если ничего не помогает, то получить больше данных
+
+## Недообучение и переобучение; утечка данных
+
+**Недообучение** (underfitting) и **переобучение** (overfitting) это две проблемы, которые возникают при обучении моделей. Они взаимосвязаны, и борясь с одной из них можно получить другую.
+
+Характеристикой недообучения является **смещение** (bias). Это *математическое ожидание* ошибки.
+
+Характеристикой переобучения является **разброс** (variance). Математически это дисперсия.
+
+### Выявление переобучения
+
+Выявить недообучение очень просто: если модель делает плохие предсказания на обучающей выборке, значит она недообучена.
+
+С переобучением сложнее. Если признаков два, то определить переобучение можно выявить визуально на диаграмме. Но обычно признаков больше двух, и визуализировать их невозможно. Поэтому используют кросс-валидацию — модель проверяют на тренировочном и на валидационном наборах данных и сравнивают метрики. Если модель показывает стабильно хорошие результаты на тестовом датасете и стабильно плохие на валидационном, значит она переобучена.
+
+### Методы борьбы с переобучением
+
+#### Понижение сложности модели
+
+Для моделей на основе *линейной (или логистической) регрессии* это означает уменьшение степени полинома.
+
+Для моделей на основе *дерева решений* это означает что нужна **стрижка дерева** (prunning) — уменьшение глубины `max_depth` и/или увеличение минимального числа элементов листа `min_samples_leaf`.
+
+![](./images/dst3-ml5-4_8.png)
+
+Сверху модель до стрижки, снизу — после. По-умолчанию максимальная глубина дерева не ограничена. Узнать глубину готовой модели можно с помощью `.get_depth()`
+
+![](./images/dst3-ml5-4_9.png)
+
+Для моделей на основе *случайного леса* используется стрижка деревьев (см. выше), а также уменьшение кол-ва признаков, на которых обучается каждая модель `max_features`.
+
+#### Регуляризация
+
+Это введение штрафа за использвание больших коэфициентов. За размер штрафа отвечает параметр `λ`. Его нужно подбирать методом перебора. Если сделать его слишком маленькним, то модель останется переобученной, а если слшиком большим — то модель из переобученной превратится в недообученную.
+
+![](./images/dst3-ml5-4_10.png)
+
+#### Манипуляция с данными
+
+Есть два способа. Первый — значительно увеличить исходный датасет, пополнив его новыми данными. Второй — удалить из исходного датасета выбросы и аномалии, которые являются отчасти причиной переобучения.
+
+### Утечка данных
+
+**Утечка данных** (data leak) — это ситуация когда обучающий датасет содержит данные косвенно или напрямую связанные с целевым признаком.
+
+Это явление похожее на переобучение (чем?), но имеет другой характер.
+
+#### Очевидные случаи
+
+Может быть такая ситуация, что модель дает слишком хорошие результаты. К этому нужно относиться с подозрением. Возможно это вызвано одной из двух причин.
+
+1. Часть валидационных данных попала в тренировочный датасет.
+2. Один из обучающих факторов коррелирует с целевым признаком.
+
+С такой проблемой справиться нетредно, нужно лишь быть внимательным.
+
+#### Скрытые случаи; giveaway-признаки
+
+Бывают ситуации что для создания модели используются такие факторы, которые не будут доступны при введении модели в эксплуатацию. Например, для выявления болезни сердца, информация об операциях на сердце будет безошибочно находить людей с больным сердцем, но полученная таким образом модель будет бесполезна, поскольку ее нельзя будет применить к людям без операций.
+
+**Giveaway-признаки** ракрывают информацию о целевой переменной и не будут доступны после развертывания модели. *Их нужно удалять из данных!*
+
+Чтобы избежать giveaway-признаков нужно
+
+- внимательно читать описание признаков
+- проверять корреляцию факторов с целевым признаком
+- относиться скептически к слишком хорошим результатам
+
+### Кривая обучения
+
+— или *learning curve* — это график зависимости метрки от кол-ва данных, взятых для обучения модели. Обычно выбирают какую-то метрику и строят две кривых на одном графике: одна кривая строится для тренировочной выборки, другая для валидационной. При этом метрика для тренировочной выборки считается только на участвовавших в обучении данных, а метрика для валидационной выборки считается для всей валидационной выборки (поэтому первая метрика ухудшается при возрастании кол-ва примеров, а вторая наоборот улучшается).
+
+На таком графике можно легко выявить:
+
+- переобученную модель (кривые не подходят близко друг к другу)
+- недообученную модель (кривые сходятся ниже желаемого значения метрики)
+- модель то-что-нужно (кривые сходятся на желаемом значении метрики)
+
+![](./images/dst3-ml5-5_7.png)
+
+Сопоставив графики разных моделей, построенных на одном и том же наборе данных, можно сравнить их по качеству.
+
+## Препроцессинг
+
+Это процесс подготовки данных к обучению. Исходные данные могут быть
+- не полны
+- не последовательны
+- не отформатированы
+- не точны (содержать аномалии и выбросы)
+
+### Кодирование признаков
+
+В Pandas есть метод [get_dummies](https://pandas.pydata.org/docs/reference/api/pandas.get_dummies.html) с простым API, и хорошо подходящий для решения простых задач. К сожалению он не пригоден для работы в продакшн.
+
+Для серьезных задач применяют кодировщики из библиотеки [sklearn.processing](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.preprocessing):
+
+- `LabelEncoder` для порядкового кодирования
+- `LabelBinarizer` для бинарного кодирования
+- `OneHotEncoder` для однократного кодирования
+
+У них всех одинаковый API, поэтому пример ниже можно легко переделать под нужный кодировщик.
+
+#### Релизация на python
+
+```python
+# import pandas as pd
+# from sklearn import preprocessing as ce
+
+def apply_onehot(data, columns, encoder=None):
+    if encoder is None:
+        encoder = ce.OneHotEncoder()
+
+    encoder.fit(data[columns])
+
+    tranformed_arr = encoder.transform(data[columns]).toarray()
+
+    tranformed_df = pd.DataFrame(
+        data=tranformed_arr,
+        columns=encoder.get_feature_names_out(columns),
+        index=data.index,
+    )
+
+    data.drop(columns=columns, inplace=True)
+
+    for column in tranformed_df.columns.values:
+        data[column] = tranformed_df[column]
+
+    return encoder
+```
+
+### Работа с пропусками
+
+Для работы с пропусками помогут три метода Pandas:
+
+- `isna`
+- `dropna`
+- `fillna`
+
+#### Пример на python
+
+```python
+# get mask for all missing values in column
+m = df['my_column'].isna()
+
+# removes rows where less than 10 non-NA values
+df.dropna(thresh=10, inplace=True)
+
+# removes all the rows with NA
+df.dropna(inplace=True)
+
+# fills NA with mode/median/mean
+df.fillna({
+    'column A': df['column A'].mode()[0],
+    'column B': df['column B'].median(),
+    'column C': df['column C'].mean(),
+})
+```
+
+Также можно создать простую модель, которая заполнит пропуски.
+
+### Работа с выбросами
+
+В простых случаях можно найти выбросы самостоятельно, построив коробчатую диаграму. Но для многомерных данных (а также для автоматизации) можно воспользоваться готовыми алгоритамами. В sklearn их три:
+
+- Isolation Forest
+- Local Outlier Factor, LOF
+- Minimum Covariance Determinant, MCD
+
+#### Isolation Forest
+
+Алгоритм на основе дерева. Эффективно находит аномалии в многомерных данных. Его основной гиперпараметр — `contamination` (загрязнение). Он меняется от `0.0` до `0.5`, по умолчанию `0.1`. Есть и другие параметры, о них можно узнать [на странице алгоритма](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html).
+
+##### Реализация на Python
+
+```python
+from  sklearn.ensemble import IsolationForest
+ 
+iso = IsolationForest(contamination=0.1)
+y_predicted = iso.fit_predict(X_train)
+
+m = y_predicted == -1
+X_train, y_train = X_train[~m], y_train[~m]
+```
+
+#### Local Outlier Factor (LOF)
+
+Ищет выбросы оценивая удаленность элементов от ближайших соседей. Самые удаленные элементы будут счиаться аномалиями. О параметрах класса можно узнать [на его странице](https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.LocalOutlierFactor.html).
+
+##### Реализация на Python
+
+```python
+from sklearn.neighbors import LocalOutlierFactor
+ 
+lof = LocalOutlierFactor()
+y_predicted = lof.fit_predict(X_train)
+
+m = y_predicted == -1
+X_train, y_train = X_train[~m], y_train[~m]
+```
+
+#### Minimum Covariance Determinant (MCD)
+
+Этот алгоритм подходит только для данных с гаусовским распределением параметров, потому что он использует статистические методы оценки нормального распределения. (Он строит гиперсферу, покрывающую нормально распределенные данные, и считает выбросами все элементы за ее пределами.)
+
+В sklearn данные алгоритм представлен классом [EllipticEnvelope](https://scikit-learn.org/stable/modules/generated/sklearn.covariance.EllipticEnvelope.html)
+
+##### Реализация на Python
+
+```python
+from sklearn.covariance import EllipticEnvelope
+ 
+ee = EllipticEnvelope(contamination=0.01)
+y_predicted = ee.fit_predict(X_train)
+
+m = y_predicted == -1
+X_train, y_train = X_train[~m], y_train[~m]
+```
+### Трансформация распределения признаков
+
+#### Квантильное преобразование
+
+Класс [QuantaileTransformer](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.QuantileTransformer.html) позволяет получить нормальное или равномерное распределение. Как он это делает мне не совсем понятно. Известно, что он использует функции `PDF`, `CDF` и `PPF`.
+
+![](./images/dst3-ml6-6_1.png)
+
+❗️ Минус данного преобразования в том, что оно может разрушить линейные связи между преобразуемым признаком и другими.
+
+##### Реализация на Python
+
+```python
+from sklearn.preprocessing import QuantileTransformer
+
+# output_distribution can be "normal" or "uniform"
+qtr = QuantileTransformer(output_distribution='normal')
+columns = ['year', 'condition']
+data[columns] = qtr.fit_transform(data[columns].values)
+
+# data[columns].hist();
+```
+
+#### Логарифмическое преобразование
+
+Очень популярное преобразование. Его очень просто использовать. В отличие от квантильного преобразования, линейные связи будут сохранены.
+
+##### Реализация на Python
+
+```python
+import numpy as np
+
+columns = ['price']
+data[columns] = np.log(data[columns].values)
+
+# data[columns].hist();
+```
+
+#### Преобразование Бокса-Кокса и Йео-Джонсона
+
+Класс [PowerTransformer](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html) позволяет использовать один из двух автоматических методов:
+
+- метод Бокса-Кокса (подходит для признаков со значениями `> 0`)
+- метод Йео-Джонсона (подходит для любых значений)
+
+##### Реализация на Python
+
+```python
+from sklearn.preprocessing import PowerTransformer
+
+#  methods: 'box-cox' or 'yeo-johnson'
+ptr = PowerTransformer(method='box-cox')
+columns = ['year', 'price']
+data[columns] = ptr.fit_transform(data[columns].values)
+
+# data[columns].hist();
+```
+
+#### Преобразование широты и долготы
+
+С помощью класса [geopy](https://pypi.org/project/geopy/) можно получить почтовый адрес по координатам.
+
+##### Реализация на Python
+
+```python
+from geopy.geocoders import Nominatim
+
+geolocator = Nominatim(user_agent="geoapiExercises")
+lat = 45.518031
+lng = -122.578752
+location = geolocator.reverse(f'{lat}, {lng}')
+
+# print(location)
+# location.raw
+# location.raw['address']
+```
+
+### Отбор признаков
+
+#### RFE
+
+Для обучения модели мы можем взять не все признаки. В первую очередь следует исключить мультиколлинеарные рпризнаки. Из оставшихся нужно выбрать самые важные. Для этого в sklearn есть *метод рекурсивного исключения* (RFE). Он обучает модель на всех признаках, оценивает вклад каждого признака, убирает наименее важные признаки и рекурсивно повторяет процесс, подбирая оптимальный набор признаков.
+
+##### Реализация на python
+
+```python
+from sklearn.feature_selection import RFE
+
+estimator = linear_model.LinearRegression()
+
+# n_features_to_select - сколько признаков оставить
+# step - сколько признаков убирать за одну итерацию
+# оба параметра могут быть типа int или float (от 0 до 1)
+# int для абсолютного кол-ва, float — для доли от целого
+selector = RFE(estimator, step=1)
+selector = selector.fit(X_train, y_train)
+selector.get_feature_names_out()
+
+# pd.DataFrame({
+#     "columns": X_train.columns.values,
+#     "rank": selector.ranking_,
+# }).sort_values(by=['rank'])
+
+```
+
+#### Статистические методы
+
+Можно производить оценку важности признаков с помощью статистических методов.
+
+![](./images/dst3-ml6-9_3.png)
+
+Эти методы реализованы в библиотеках sklearn и SciPy:
+
+- коэффициент корреляции Пирсона [f_regression()](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.f_regression.html)
+- ранговая корреляция Спирмана [spearmanr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html)
+- дисперсионный анализа ANOVA [f_classif()](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.f_classif.html)
+- Кендалл [kendalltau](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kendalltau.html)
+- хи-квадрат [chi2()](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.chi2.html)
+- Mutual Information [mutual_info_classif()](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_classif.html) и [mutual_info_regression()](https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_regression.html)
+
+#### Отбор наиболее важных признаков
+
+Есть удобный класс `SelectKBest`, позволяющий выбрать `K` самых важных признаков.
+
+##### Реализация на Python
+
+```python
+from sklearn.feature_selection import SelectKBest, f_regression
+
+selector = SelectKBest(f_regression, k=3)
+selector.fit(X_train, y_train)
+ 
+selector.get_feature_names_out()
 ```
