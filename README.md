@@ -15,3 +15,4 @@
 - ДЗ 4: [Знакомтсво с Comet.ml — планирование эксперимента и логирование изменений](https://github.com/evpozdniakov/ds_projects/tree/master/hw4)
 - Проект 3: [EDA + Feature engineering](https://github.com/evpozdniakov/ds_projects/tree/master/project3)
 - ДЗ 5: [Отбор наиболее важных признаков](https://github.com/evpozdniakov/ds_projects/tree/master/hw5)
+- ДЗ 6: [Подбор гиперпараметров с помощью базовых и продвинутых методов](https://github.com/evpozdniakov/ds_projects/tree/master/hw6)
