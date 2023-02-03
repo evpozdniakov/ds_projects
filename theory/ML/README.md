@@ -1541,7 +1541,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 ![](./images/k-fold.png)
 
-Преимущество такого подхода в том, что валидация модель будет проведена на всех данных.
+Преимущество такого подхода в том, что валидация модели будет проведена на всех данных.
 
 #### Реализация на python
 
@@ -2022,3 +2022,117 @@ selector.fit(X_train, y_train)
  
 selector.get_feature_names_out()
 ```
+
+## Оптимизация гиперпараметров
+
+### Базовая оптимизация
+
+Существуют два метода для поиска оптимальной комбиации гиперпараметров, `GridSearchCV` и `RandomizedSearchCV`. Первый перебирает все гиперпараметры (из заданных) и находит наилучшую их комбинацию. Этот метод очень эффективен, но требует много времени и ресурсов.
+
+Альтеранитвой является `RandomizedSearchCV`. Мы также задаем все возможные гиперпараметры, но говорим методу выбрать несколько комбинаций случайным образом.
+
+#### GridSearchCV
+
+Перебирает все гиперпараметры и находит наилучшую их комбинацию.
+
+```python
+from sklearn.model_selection import GridSearchCV
+
+param_grid = [
+    {
+        'penalty': ['l2', 'none'],
+        'solver': ['lbfgs', 'sag'],
+        'C': [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 1]
+    },
+    {
+        'penalty': ['l1', 'l2'] ,
+        'solver': ['liblinear', 'saga'],
+        'C': [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 1]
+    }
+]
+
+grid_search = GridSearchCV(
+    estimator=linear_model.LogisticRegression(
+        # неизменяемые параметры
+        random_state=1, #генератор случайных чисел
+        max_iter=1000 #количество итераций на сходимость
+    ),
+    # scoring=<score-функция>
+    # по умолчанию используется
+    # sklearn.metrics.accuracy_score для классификации
+    # sklearn.metrics.r2_score для регрессии
+    param_grid=param_grid,
+    cv=5, # кол-во фолдов кросс-валдиации
+    n_jobs = -1, # кол-во ядер
+)
+
+grid_search.fit(X_train, y_train)
+
+# наилучшая комбинация гиперпараметров
+print(grid_search.best_params_)
+
+# метрика на тестовой выборке
+print(grid_search.score(X_test, y_test))
+
+# любая другая метрика
+y_test_pred = grid_search.predict(X_test)
+print(metrics.classification_report(y_test, y_test_pred))
+```
+
+#### RandomizedSearchCV
+
+Из списка возможных значений гиперпараметров выбирает несколько случайных комбинаций.
+
+```python
+from sklearn.model_selection import RandomizedSearchCV
+
+param_distributions = [
+    {
+        'penalty': ['l2', 'none'],
+        'solver': ['lbfgs', 'sag'],
+        'C': [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 1]
+    },
+    {
+        'penalty': ['l1', 'l2'] ,
+        'solver': ['liblinear', 'saga'],
+        'C': [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 1]
+    }
+]
+
+random_search = RandomizedSearchCV(
+    estimator=linear_model.LogisticRegression(
+        # неизменяемые параметры
+        random_state=1, #генератор случайных чисел
+        max_iter=1000 #количество итераций на сходимость
+    ),
+    # scoring=<score-функция>
+    # по умолчанию используется
+    # sklearn.metrics.accuracy_score для классификации
+    # sklearn.metrics.r2_score для регрессии
+    param_distributions=param_distributions,
+    n_iter=10, # кол-во случайных комбинаций
+    cv=5, # кол-во фолдов кросс-валдиации
+    n_jobs = -1, # кол-во ядер
+)
+
+random_search.fit(X_train, y_train)
+
+# наилучшая комбинация гиперпараметров
+print(random_search.best_params_)
+
+# метрика на тестовой выборке
+print(random_search.score(X_test, y_test))
+
+# любая другая метрика
+y_test_pred = random_search.predict(X_test)
+print(metrics.classification_report(y_test, y_test_pred))
+
+```
+
+#### Рекомендации по настройке ансамблей
+
+| Гиперпараметр | Bagging | Gradient boosting |
+| - | - | - |
+| n_estimators | Больше — лучше | Больше — выше риск переобучения |
+| max_depth | Может быть большой | Рекомендуется не более 5 |
+| learning_rate | — | Меньше — лучше
