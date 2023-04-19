@@ -922,7 +922,7 @@ sns.barplot(data=features_df)
 Объединять модели можно по-разному. Например обучить несколько линейных регрессий и затем отправить их результаты в дерево. Но существут три проверенных способа.
 
 - **Бэггинг** (bagging) — *параллельно* обучаем несколько *одинаковых* моделей; конечным решением будет их среднее значение.
-- **Стэкинг** (stacking) — *параллельно* обучаем несколько *разных* моделей; их результаты получает финальная модель и принимает конечное решение.
+- **Стекинг** (stacking) — *параллельно* обучаем несколько *разных* моделей; их результаты получает финальная модель и принимает конечное решение.
 - **Бустинг** (boosting) — *последовательно* обучаем несколько *одинаковых* моделей; каждая новая модель фокусируется на примерах, в которых предыдущая допустила ошибку.
 
 ### Бэггинг
@@ -1450,10 +1450,11 @@ fig.show()
 
 ## Dimension reduction
 
-**Понижение размерности** это задача, которая уменьшает кол-во признаков, описывающих объект. Для данных с большим кол-вом признаков она может понадобиться в двух случаях:
+**Понижение размерности** это задача, которая уменьшает кол-во признаков, описывающих объект. Для данных с большим кол-вом признаков она может понадобиться:
 
 - чтобы визуализировать результаты кластеризации
 - чтобы быстрее обучить модель
+- чтобы использовать модель на ограниченных ресурсах, например на телефоне
 
 В процессе выполнения задачи понижения размерности сами *данные будут преобразованы* одним из двух способов:
 
@@ -2136,3 +2137,327 @@ print(metrics.classification_report(y_test, y_test_pred))
 | n_estimators | Больше — лучше | Больше — выше риск переобучения |
 | max_depth | Может быть большой | Рекомендуется не более 5 |
 | learning_rate | — | Меньше — лучше
+
+### Продвинутая оптимизация
+
+Мы рассмотрим два фреймворка, которые перебирают значения гиперпараметров не просто, а со смыслом. Они используют *байесовскую* оптимизацию. Суть ее в том, чтобы учитывать результаты предыдущих итераций. Благодаря этому такие фреймворки будут чаще тестировать такие значения, которые с большей вероятностью дадут хороший результат.
+
+#### Hyperopt
+
+```python
+# import hyperopt
+# from sklearn.model_selection import cross_val_score
+# from hyperopt import hp, fmin, tpe, Trials
+# fmin - основная функция, она будет минимизировать наш функционал
+# tpe - алгоритм оптимизации
+# hp - включает набор методов для объявления пространства поиска гиперпараметров
+# trails - используется для логирования результатов
+
+# зададим пространство поиска гиперпараметров
+# hp.choice(label, options) #равновероятный выбор из множества
+# hp.randint(label, upper) #случайное целое число; random seed, например
+# hp.uniform(label, low, high) #равномерное непрерывное распределение
+# hp.normal(label, mu, sigma) #нормальное непрерывное распределение
+# hp.lognormal(mu, sigma) #логнормальное непрерывное распределение
+space={
+    'n_estimators': hp.quniform('n_estimators', 100, 200, 1),
+    'max_depth' : hp.quniform('max_depth', 15, 26, 1),
+    'min_samples_leaf': hp.quniform('min_samples_leaf', 2, 10, 1)
+}
+
+# Нам нужно создать функцию для минимизации. Она должна принимать
+# словарь значений гиперпараметров и возвращать значение целевой функции.
+random_state = 42
+def hyperopt_rf(params, cv=5, X=X_train_scaled, y=y_train, random_state=random_state):
+    # функция получает комбинацию гиперпараметров в `params`
+    params = {
+        'n_estimators': int(params['n_estimators']),
+        'max_depth': int(params['max_depth']),
+        'min_samples_leaf': int(params['min_samples_leaf'])
+    }
+
+    # используем эту комбинацию для построения модели
+    model = ensemble.RandomForestClassifier(**params, random_state=random_state)
+
+    # обучаем модель
+    model.fit(X, y)
+    score = metrics.f1_score(y, model.predict(X))
+
+    # обучать модель можно также с помощью кросс-валидации
+    # применим  cross validation с тем же количеством фолдов
+    # score = cross_val_score(model, X, y, cv=cv, scoring='f1', n_jobs=-1).mean()
+
+    # метрику необходимо минимизировать, поэтому ставим знак минус
+    return -score
+
+trials = Trials() # используется для логирования результатов
+
+best=fmin(
+    hyperopt_rf, # наша функция 
+    space=space, # пространство гиперпараметров
+    algo=tpe.suggest, # алгоритм оптимизации, установлен по умолчанию, задавать необязательно
+    max_evals=20, # максимальное количество итераций
+    trials=trials, # логирование результатов
+    rstate=np.random.default_rng(random_state) # фиксируем для повторяемости результата
+)
+
+print('Наилучшие значения гиперпараметров')
+print(hyperopt.space_eval(space, best))
+```
+
+#### Optuna
+
+```python
+# import optuna
+# from sklearn.model_selection import cross_val_score
+
+# В случае, если параметры зависят друг от друга,
+# нам нужна функция для вычисления конечного набора параметров
+def calc_log_reg_params(all_params):
+    solver = all_params['solver']
+    penalty_saga = all_params['penalty_saga']
+    penalty_liblinear = all_params['penalty_liblinear']
+    penalty_others = all_params['penalty_others']
+    l1_ratio = all_params['l1_ratio']
+    C = all_params['C']
+
+    res_params = {
+        'random_state': 42,
+        'max_iter': 50,
+        'solver': solver,
+        'class_weight': 'balanced',
+    }
+
+    if solver == 'saga':
+        res_params['penalty'] = penalty_saga
+    elif solver == 'liblinear':
+        res_params['penalty'] = penalty_liblinear
+    else:
+        res_params['penalty'] = penalty_others
+
+    if solver != 'none':
+        res_params['C'] = C
+
+    if res_params['penalty'] == 'elasticnet':
+        res_params['l1_ratio'] = l1_ratio
+
+    return res_params
+
+def optuna_rf(trial):
+    # suggest_categorical(name, choices) — для категориальных гиперпараметров;
+    # suggest_int(name,low,high,step=1,log=False) — для целочисленных гиперпараметров;
+    # suggest_float(name,low,high,step=None,log=False) — для непрерывных гиперпараметров;
+    # suggest_uniform(name,low,high) — для целочисленных и непрерывных гиперпараметров.
+
+    # задаем пространство поиска (перечисляем все вомозжные параметры)
+    solver = trial.suggest_categorical('solver', ['lbfgs', 'newton-cg', 'sag', 'saga', 'liblinear'])
+    penalty_saga = trial.suggest_categorical('penalty_saga', ['elasticnet', 'l1', 'l2', 'none'])
+    penalty_liblinear = trial.suggest_categorical('penalty_liblinear', ['l1', 'l2'])
+    penalty_others = trial.suggest_categorical('penalty_others', ['l2', 'none'])
+    C = trial.suggest_float('C', 0.01, 20, log=True)
+    l1_ratio = trial.suggest_float('l1_ratio', 0.1, 0.9)
+
+    # динамически вычисляем конечный набор параметров
+    res_params = calc_log_reg_params({
+        'solver': solver,
+        'penalty_saga': penalty_saga,
+        'penalty_liblinear': penalty_liblinear,
+        'penalty_others': penalty_others,
+        'C': C,
+        'l1_ratio': l1_ratio,
+    })
+
+    # создаем модель
+    log_reg = linear_model.LogisticRegression(**res_params)
+
+    # обучаем модель с помощью кросс-валидации (или без)
+    score = cross_val_score(log_reg, X_train, y_train, cv=5, scoring='f1', n_jobs=-1).mean()
+
+    return score
+
+# создаем процесс обучения и запускаем его
+study = optuna.create_study(study_name='Optuna: Logistic regression', direction='maximize')
+
+study.optimize(optuna_rf, n_trials=15)
+
+# при необходимости выполняем дополнтиельные итерации
+study.optimize(optuna_rf, n_trials=10)
+
+print('Наилучшие значения гиперпараметров')
+print(study.best_params)
+```
+
+## Ансамблирование моделей
+
+| Метод | Плюсы | Минусы |
+|-|-|-|
+|Bagging|Хорошо параллелится; снижает разброс|Нужны глубокие деревья; плохо интерпретируется|
+|Stacking|Хорошо параллелится|Плохо интерпретируется|
+|Boosting|Снижает смещение; нужны неглубокие деревья|Плохо параллелится; плохо интерпретируется|
+
+### Бэггинг (bagging)
+
+О беггинге мы уже говорили. Реализией этого метода ансамблирования являются классы [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) и [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor).
+
+Важно отметить, что бэггинг создавался с целью *уменьшить разброс* модели.
+
+### Стекинг (stacking)
+
+Суть метода:
+
+1. обучить *базовые модели* — некоторое количество однородных или разнородных моделей;
+2. обучить *метамодель* (финальную модель) на мета-факторах (предсказаниях базовых моделей).
+
+Реализация в sklearn:
+- [StackingClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingClassifier.html#sklearn.ensemble.StackingClassifier)
+- [StackingRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingRegressor.html#sklearn.ensemble.StackingRegressor)
+
+#### Блендинг (blending)
+
+Это простейшая реализация стекинга.
+
+![](./images/dst-3-ml-8-5.png)
+
+Она плоха тем, что ни базовые модели, ни метамодель не обучаются на полных данных.
+
+#### Улучшенная версия блендинга — стекинг
+
+В отличие от блэндинга, в стекинге обучение базовых моделей происходит на целом тренировочном сете. Чтобы не переобучить базовые модели используется кросс-валидация на фолдах.
+
+![](./images/stacking.png)
+
+Метамодель получает результаты базовых моделей (а также может получать и исходные данные из тренировочного сета).
+
+В качестве базовых лучше использовать модели разной природы. (Модели одной природы будут давать похожие результаты.)
+
+Для метамодели лучше выбирать простые модели.
+
+| плюсы | минусы |
+|-------|--------|
+| При грамотном использовании дают лучшие результаты. | Нет готовых решений (как случайный лес), поэтому на их настройку нужно тратить больше времени. |
+
+### Бустинг (boosting)
+
+Это композиция слабых моделей, обучаемых последовательно. Каждая следующая модель сосредатачивается на ошибках предыдущей. Цель бустнга — *уменьшить смещение* модели.
+
+![](./images/dst3-ml3-7_2.png)
+
+Чтобы следующая модель учитывала примеры с ошибками, их значимость (вес) увеличивают.
+
+#### Адаптивный бустинг
+
+В sklearn.ensemble данный алгоритм реализован в виде классов [AdaBoostRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html) и [AdaBoostClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier).
+
+##### Реализация на Python
+
+```python
+from sklearn.ensemble import AdaBoostRegressor
+
+dt = DecisionTreeRegressor(
+    max_depth=3,
+    random_state=42,
+)
+
+ada = AdaBoostRegressor(
+    base_estimator=dt,
+    learning_rate=1,
+    loss='linear',
+    n_estimators=50,
+    random_state=42,
+)
+
+ada.fit(X_train, y_train)
+
+# y_test_pred = ada.predict(X_test)
+```
+
+#### Градиентный бустинг
+
+Каждая следующая модель пытается уменьшить функцию потерь предыдущей модели. На каждом шаге функця уникальна, но если она дифференциируема, то можно найти градиент и сделать шаг по направлению к ее минимуму.
+
+В качестве базовых моделей обычно выбирают деревья, поскольку из всех слабых моделей они обладают лучшей способностью описывать сложные зависимости. Такие композиции сокращенно называют **GBDT** — gradient boosting on decision trees.
+
+##### Реализаци на Python
+
+```python
+# from sklearn.ensemble import GradientBoostingRegressor
+
+gbr = GradientBoostingRegressor(
+    n_estimators=100,
+    learning_rate=0.1,
+    subsample=1.0,
+    max_depth=3,
+    random_state=42,
+)
+
+gbr.fit(X_train, y_train)
+
+# y_test_pred = gbr.predict(X_test)
+```
+
+##### Рекоменадции по подбору параметров GBDT
+
+Кол-во деревьев (`n_estimators`) чем больше — тем лучше, но есть риск переобучения. Нужно начинать с `50—100` и добавлять при необходимости.
+
+Темп обучения (`learning_rate`) обычно выбирают между `0.1` и `1.0`.
+
+Глубина деревьев (`max_depth`) должна быть небольшой, от `1` до `8`.
+
+### Pipeline
+
+**Пайплайн** это *автоматизированный* процесс включающий в себя:
+- сбор данных
+- обработку данных
+- генерацию признаков
+- отбор признаков
+- обучение модели
+- проверку качества модели
+
+```python
+# from sklearn.preprocessing import StandardScaler, OneHotEncoder, OrdinalEncoder
+# from sklearn.compose import make_column_transformer
+# from sklearn.ensemble import RandomForestRegressor
+# from sklearn.pipeline import Pipeline
+
+ct = make_column_transformer(
+    (OrdinalEncoder(), ['Region']),
+    (StandardScaler(), ['Price']),
+    (OneHotEncoder(), ['Country']),
+)
+
+pipeline = Pipeline([
+    ('ct', ct),
+    ('rf', RandomForestRegressor()),
+])
+
+pipeline.fit(X_train, y_train)
+
+y_test_pred = pipeline.predict(X_test)
+
+# pipeline.set_params(rf__randome_state=42, rf__n_estimators=200)
+# pipeline.fit(X_train, y_train)
+```
+
+#### Сериализация/десеариализация
+
+В Python можно сохранять объекты двоичном формате в файлы с раширением `pkl`. 
+
+```python
+# !pip install joblib
+# import joblib
+
+joblib.dump(pipeline, 'pipeline.pkl')
+```
+
+Эту особенность можно использовать для портирования обученых моделей.
+
+```python
+# import joblib
+# а также импортировать все библиотеки,
+# использованные для создания пайплайна
+
+pipeline = joblib.load('pipeline.pkl')
+# y = pipeline.predict(X)
+```
+
+### Metric learning
