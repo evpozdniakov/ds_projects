@@ -16,4 +16,5 @@
 - Проект 3: [EDA + Feature engineering](https://github.com/evpozdniakov/ds_projects/tree/master/project3)
 - ДЗ 5: [Отбор наиболее важных признаков](https://github.com/evpozdniakov/ds_projects/tree/master/hw5)
 - ДЗ 6: [Подбор гиперпараметров с помощью базовых и продвинутых методов](https://github.com/evpozdniakov/ds_projects/tree/master/hw6)
+- ДЗ 7: [Линейная алгебра в контексте линейных методов. Практика.](https://github.com/evpozdniakov/ds_projects/blob/master/hw7/math-ML-2-practice.ipynb)
 - Проект 4: [Задача классификации](https://github.com/evpozdniakov/ds_projects/tree/master/project4)
