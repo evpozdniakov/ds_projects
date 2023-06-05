@@ -1,6 +1,6 @@
 # Стохастический градиентный и координатный спуски
 
-*Проект по курсу [«Профессия Data Science»](https://lms.skillfactory.ru/courses/course-v1:Skillfactory+DST-PRO+15APR2020/about)\
+*ДЗ по курсу [«Профессия Data Science»](https://lms.skillfactory.ru/courses/course-v1:Skillfactory+DST-PRO+15APR2020/about)\
 от школы [SkillFactory](https://skillfactory.ru)*
 
 ## Формулировка задания

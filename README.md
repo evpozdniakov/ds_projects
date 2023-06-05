@@ -18,4 +18,4 @@
 - ДЗ 6: [Подбор гиперпараметров с помощью базовых и продвинутых методов](https://github.com/evpozdniakov/ds_projects/tree/master/hw6)
 - Проект 4: [Задача классификации](https://github.com/evpozdniakov/ds_projects/tree/master/project4)
 - ДЗ 7: [Линейная алгебра в контексте линейных методов. Практика.](https://github.com/evpozdniakov/ds_projects/blob/master/hw7/math-ML-2-practice.ipynb)
-- Проект 5: [Стохастический градиентный и координатный спуски](https://github.com/evpozdniakov/ds_projects/tree/master/project5)
+- ДЗ 8: [Стохастический градиентный и координатный спуски](https://github.com/evpozdniakov/ds_projects/tree/master/hw8)
