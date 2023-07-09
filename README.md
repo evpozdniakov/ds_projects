@@ -19,3 +19,6 @@
 - Проект 4: [Задача классификации](https://github.com/evpozdniakov/ds_projects/tree/master/project4)
 - ДЗ 7: [Линейная алгебра в контексте линейных методов. Практика.](https://github.com/evpozdniakov/ds_projects/blob/master/hw7/math-ML-2-practice.ipynb)
 - ДЗ 8: [Стохастический градиентный и координатный спуски](https://github.com/evpozdniakov/ds_projects/tree/master/hw8)
+- Проект 5: [Предсказание продолжительности поездки на такси в Нью-Йорке](https://github.com/evpozdniakov/ds_projects/tree/master/project5)
+- ДЗ 9: [Классификация текстов с использованием Наивного Байесовского Классификатора](https://github.com/evpozdniakov/ds_projects/tree/master/hw9)
+- ДЗ 10: [Четыре алгоритма кластеризации, практика](https://github.com/evpozdniakov/ds_projects/tree/master/hw10)
