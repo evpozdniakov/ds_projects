@@ -22,3 +22,5 @@
 - Проект 5: [Предсказание продолжительности поездки на такси в Нью-Йорке](https://github.com/evpozdniakov/ds_projects/tree/master/project5)
 - ДЗ 9: [Классификация текстов с использованием Наивного Байесовского Классификатора](https://github.com/evpozdniakov/ds_projects/tree/master/hw9)
 - ДЗ 10: [Четыре алгоритма кластеризации, практика](https://github.com/evpozdniakov/ds_projects/tree/master/hw10)
+- ДЗ 11: [Оценка кластеризации с помощью внешних мер](https://github.com/evpozdniakov/ds_projects/tree/master/hw11)
+- ДЗ 12: [Снижение размерности, практика](https://github.com/evpozdniakov/ds_projects/tree/master/hw12)
