@@ -26,3 +26,4 @@
 - ДЗ 12: [Снижение размерности, практика](https://github.com/evpozdniakov/ds_projects/tree/master/hw12)
 - Проект 6: [Сегментирование клиентов онлайн-магазина подарков](https://github.com/evpozdniakov/ds_projects/tree/master/project6)
 - ДЗ 13: [Предсказание временного ряда (эксп. сглаживание и авторегрессия)](https://github.com/evpozdniakov/ds_projects/tree/master/hw13)
+- ДЗ 14: [Анализ ВВП Ганы](https://github.com/evpozdniakov/ds_projects/tree/master/hw14)
